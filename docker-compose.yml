@@ -1,0 +1,51 @@
+services:
+  web-app:
+    build:
+      context: .
+    expose:
+        - 8000
+#    ports:
+#      - "8000:8000"
+    volumes:
+      - ./service:/service
+      - ./service/static/:/service/static/
+      - ./service/media/:/service/media/
+#    environment:
+#      - DB_HOST =database
+#      - DB_NAME =dbname
+#      - DB_USER=dbuser
+#      - DB_PASS=pass
+
+    env_file:
+      - ./.env.dev
+
+    command: sh -c "python manage.py migrate && gunicorn service.wsgi:application --bind 0.0.0.0:8000"
+
+    depends_on:
+      - database
+
+  database:
+    image: postgres:14.6-alpine
+    volumes:
+      - ./postgres:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=dbname
+      - POSTGRES_USER=dbuser
+      - POSTGRES_PASSWORD=pass
+    ports:
+      - 5432:5432
+
+  nginx:
+     build: ./nginx
+     container_name: nginx
+     ports:
+       - 1337:80
+     depends_on:
+       - web-app
+     volumes:
+       - ./service/static/:/service/static/
+       - ./service/media/:/service/media/
+volumes:
+  postgres:
+  static_volume:
+  media_volume:
